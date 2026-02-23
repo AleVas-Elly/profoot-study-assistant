@@ -7,6 +7,8 @@ Profoot is a self-hosted AI study assistant that turns any PDF textbook into an 
 - **Study Mode** — Ask free-form questions and get detailed, source-cited answers drawn directly from your textbook.
 - **Test Mode** — Generate a personalised multiple-choice quiz from any chapter or the full book, complete with explanations for correct and incorrect answers.
 - **Smart PDF Ingestion** — Automatically detects chapter boundaries in both born-digital and scanned (image-based) PDFs using OCR.
+- **Modern Glassmorphic UI** — A sleek, premium interface featuring dynamic blurring, consistent styling, and intuitive sidebar controls.
+- **Live Progress Tracking** — Real-time progress bars and visual feedback during document ingestion and test generation.
 - **Multi-key API Rotation** — Distributes requests across multiple Google API keys and rotates automatically when rate limits are hit.
 - **Persistent Chat History** — Conversations are stored locally in SQLite so you can pick up where you left off.
 

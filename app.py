@@ -82,10 +82,10 @@ def delete_book_data(book_filename):
 def load_llms(api_key=None):
     """Initializes the Gemini LLM chain with model fallbacks."""
     target_key = api_key or os.environ.get("GOOGLE_API_KEY") or st.session_state.get("GOOGLE_API_KEY")
-    primary   = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
-    fallback_1 = ChatGoogleGenerativeAI(model="gemini-2.5-pro",  google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
-    fallback_2 = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
-    fallback_3 = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
+    primary    = ChatGoogleGenerativeAI(model="gemini-2.0-flash",  google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
+    fallback_1 = ChatGoogleGenerativeAI(model="gemini-2.0-flash-lite",      google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
+    fallback_2 = ChatGoogleGenerativeAI(model="gemini-2.5-flash",      google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
+    fallback_3 = ChatGoogleGenerativeAI(model="gemini-2.0-flash",  google_api_key=target_key, temperature=0.2, timeout=60.0, max_retries=0)
     return [primary, fallback_1, fallback_2, fallback_3]
 
 def apply_global_styles():
@@ -94,6 +94,8 @@ def apply_global_styles():
         """
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
         /* ── GLOBAL GRADIENT BACKGROUND ── */
         .stApp {
@@ -150,11 +152,36 @@ def apply_global_styles():
         }
 
         /* ── TYPOGRAPHY ── */
-        h1, h2, h3, h4, h5, h6, p, div, span, label, .stMarkdown, [data-testid="stText"] {
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6, label, .stMarkdown, [data-testid="stText"] {
             font-family: 'Inter', sans-serif !important;
             color: #1e293b !important;
         }
-        
+        /* Apply Inter to content text — but NOT with !important so Material Icons spans can keep their own font */
+        p, .stChatMessage p, .stMarkdown p {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* ── PRESERVE MATERIAL ICONS on all Streamlit icon elements ── */
+        /* data-testid="stIconMaterial" confirmed by DOM inspection as the actual icon span */
+        [data-testid="stIconMaterial"],
+        .material-icons,
+        .material-symbols-outlined,
+        [class*="material-icon"],
+        [class*="MaterialIcon"],
+        [data-testid="stChatMessageAvatarAssistant"] span,
+        [data-testid="stChatMessageAvatarUser"] span,
+        [data-testid="stSidebarCollapseButton"] span,
+        [data-testid="stBaseButton-headerNoPadding"] span {
+            font-family: 'Material Icons', 'Material Icons Outlined', 'Material Symbols Outlined', 'Material Symbols Rounded' !important;
+            font-feature-settings: 'liga' !important;
+            font-style: normal !important;
+            display: inline-block !important;
+        }
+
+
         /* Exception for primary buttons */
         .stButton > button[kind="primary"] {
             color: #ffffff !important;
@@ -235,80 +262,130 @@ def apply_global_styles():
             transition: transform 0.3s ease;
         }
 
-        /* ── CHAT BUBBLES & EMOJIS ── */
+        /* ── CHAT COLUMN CONTAINER — two vertical border lines ── */
+        /* Wrap the whole chat scrollable area in a white/frosted column */
+        [data-testid="stChatMessageContainer"],
+        div[class*="stChatMessageContainer"] {
+            border-left: 2px solid rgba(255, 255, 255, 0.7) !important;
+            border-right: 2px solid rgba(255, 255, 255, 0.7) !important;
+            background: rgba(255, 255, 255, 0.22) !important;
+            backdrop-filter: blur(20px) saturate(1.6) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
+            border-radius: 0 !important;
+            padding: 1.5rem 1.25rem !important;
+        }
+
+        /* ── EACH MESSAGE ROW ── */
         [data-testid="stChatMessage"] {
             background-color: transparent !important;
-            margin-bottom: 1.5rem !important;
+            margin-bottom: 1.25rem !important;
             padding: 0 !important;
             display: flex !important;
             align-items: flex-start !important;
-        }
-        
-        /* Avatar/Emoji styling */
-        [data-testid="stChatMessageAvatarAssistant"], [data-testid="stChatMessageAvatarUser"] {
-            background-color: rgba(255, 255, 255, 0.5) !important;
-            backdrop-filter: blur(10px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.6) !important;
-            border-radius: 12px !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+            gap: 0.75rem !important;
         }
 
-        [data-testid="stChatMessage"] > div[data-testid="stFormatContainer"] {
-            border-radius: 20px !important;
-            padding: 1.25rem !important;
-            backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(255,255,255,0.7) !important;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.04) !important;
-            animation: bubbleFadeIn 0.4s ease-out both;
-            max-width: 80% !important;
+        /* ── AVATAR CIRCLES ── */
+        [data-testid="stChatMessageAvatarAssistant"],
+        [data-testid="stChatMessageAvatarUser"] {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+            border: 2px solid rgba(255,255,255,0.8) !important;
+            flex-shrink: 0 !important;
         }
-        
-        /* User bubbles */
+        [data-testid="stChatMessageAvatarAssistant"] {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
+        }
+        [data-testid="stChatMessageAvatarUser"] {
+            background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%) !important;
+        }
+
+        /* ── MESSAGE BUBBLE TEXT CONTAINER ── */
+        /* Target the scrollable content child of the chat row — Streamlit uses several possible wrappers */
+        [data-testid="stChatMessage"] > div[data-testid="stFormatContainer"],
+        [data-testid="stChatMessage"] > div[data-testid="stVerticalBlock"],
+        [data-testid="stChatMessage"] > div[data-testid="stChatMessageContent"],
+        [data-testid="stChatMessage"] > div:not([data-testid="stChatMessageAvatarAssistant"]):not([data-testid="stChatMessageAvatarUser"]) {
+            border-radius: 18px !important;
+            padding: 0.9rem 1.2rem !important;
+            border: 1px solid rgba(255,255,255,0.7) !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+            animation: bubbleFadeIn 0.35s ease-out both;
+            max-width: 75% !important;
+            line-height: 1.6 !important;
+        }
+
+        /* ── USER messages — right side, blue-white tint ── */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
             flex-direction: row-reverse !important;
         }
-        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div[data-testid="stFormatContainer"] {
-            background: rgba(255, 255, 255, 0.65) !important;
-            margin-right: 0.75rem !important;
-            margin-left: 15% !important;
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div[data-testid="stFormatContainer"],
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div[data-testid="stVerticalBlock"],
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div[data-testid="stChatMessageContent"],
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div:not([data-testid="stChatMessageAvatarUser"]) {
+            background: rgba(219, 234, 254, 0.88) !important;
+            border-color: rgba(147, 197, 253, 0.65) !important;
             border-bottom-right-radius: 4px !important;
+            margin-right: 0 !important;
+            margin-left: auto !important;
         }
-        
-        /* Assistant bubbles */
-        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div[data-testid="stFormatContainer"] {
-            background: rgba(255, 255, 255, 0.45) !important;
-            margin-left: 0.75rem !important;
-            margin-right: 15% !important;
-            border-bottom-left-radius: 4px !important;
-        }
-        
-        @keyframes bubbleFadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div[data-testid="stFormatContainer"] p,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) > div[data-testid="stFormatContainer"] * {
+            color: #1e3a5f !important;
         }
 
-        /* ── MODE BADGE (Top Right) ── */
+        /* ── ASSISTANT messages — left side, pure white ── */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div[data-testid="stFormatContainer"],
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div[data-testid="stVerticalBlock"],
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div[data-testid="stChatMessageContent"],
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div:not([data-testid="stChatMessageAvatarAssistant"]) {
+            background: rgba(255, 255, 255, 0.88) !important;
+            border-color: rgba(255, 255, 255, 0.92) !important;
+            border-bottom-left-radius: 4px !important;
+            margin-left: 0 !important;
+            margin-right: auto !important;
+        }
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div[data-testid="stFormatContainer"] p,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) > div[data-testid="stFormatContainer"] * {
+            color: #1e293b !important;
+        }
+
+        /* ── DIVIDER LINE between messages ── */
+        [data-testid="stChatMessage"] + [data-testid="stChatMessage"] {
+            border-top: 1px solid rgba(255,255,255,0.35) !important;
+            padding-top: 1.25rem !important;
+        }
+
+        @keyframes bubbleFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── MODE BADGE (Consolidated in Header) ── */
         .mode-badge {
-            position: fixed;
-            top: 1.25rem;
-            right: 1.5rem;
-            z-index: 1001;
-            background: rgba(255, 255, 255, 0.55);
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(14px) saturate(2);
             -webkit-backdrop-filter: blur(14px) saturate(2);
             border: 1px solid rgba(255, 255, 255, 0.8);
             border-radius: 999px;
-            padding: 10px 20px;
-            font-size: 0.85rem;
+            padding: 6px 16px;
+            font-size: 0.8rem;
             font-weight: 700;
             color: #1e293b;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            display: flex;
-            align-items: center;
-            animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-right: 15px;
+            animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(30px); }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
             to { opacity: 1; transform: translateX(0); }
         }
 
@@ -320,6 +397,101 @@ def apply_global_styles():
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+        /* ── HELP TOOLTIP ── */
+        .help-wrap {
+            position: relative;
+            display: inline-block;
+            margin-top: 0.4rem;
+        }
+        .help-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.55);
+            border: 1.5px solid rgba(255,255,255,0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            cursor: default;
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #334155;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: background 0.2s, box-shadow 0.2s;
+            user-select: none;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .help-wrap:hover .help-btn {
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        }
+        .help-popover {
+            display: none;
+            position: absolute;
+            left: 40px;
+            top: -10px;
+            width: 320px;
+            z-index: 99999;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(30px) saturate(1.8);
+            -webkit-backdrop-filter: blur(30px) saturate(1.8);
+            border: 1px solid rgba(255,255,255,0.95);
+            border-radius: 22px;
+            padding: 1.25rem;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.12);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif !important;
+            animation: tooltipFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .help-popover b {
+            font-size: 0.95rem;
+            color: #0f172a;
+            display: block;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding-bottom: 0.5rem;
+        }
+        .guide-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 0.8rem;
+        }
+        .guide-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            border-radius: 6px;
+            font-size: 1rem !important;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .guide-text {
+            color: #475569;
+            line-height: 1.4;
+        }
+        .guide-text b {
+            color: #1e293b;
+            font-weight: 600;
+            display: inline;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+        .help-wrap:hover .help-popover { display: block; }
+        @keyframes tooltipFade {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
         </style>
         """,
         unsafe_allow_html=True
@@ -328,6 +500,8 @@ def apply_global_styles():
 def get_chapters(db):
     """Returns the list of chapter names stored in the vector DB for the active book."""
     import chromadb.errors
+    if db is None:
+        return ["All Chapters"]
     try:
         where_filter = None
         if "selected_book" in st.session_state and st.session_state.selected_book:
@@ -337,7 +511,9 @@ def get_chapters(db):
         raw_chapters = list(set(meta["chapter"] for meta in sample_data["metadatas"] if meta and "chapter" in meta))
         
         def chapter_sort_key(ch):
-            if ch.lower() == "inleiding": return 0
+            if not ch: return 999
+            if ch.lower() == "inleiding": return -1
+            if ch.lower() == "preface / intro": return -2
             match = re.search(r'\d+', ch)
             return int(match.group()) if match else 999
             
@@ -347,68 +523,201 @@ def get_chapters(db):
     except Exception:
         return ["All Chapters"]
 
+def _build_chroma_where(filters: dict) -> dict:
+    """Converts a flat dict of filters into a ChromaDB-compatible where clause.
+    ChromaDB requires $and for multiple conditions."""
+    if len(filters) == 0:
+        return {}
+    
+    def format_condition(k, v):
+        if isinstance(v, dict):
+            return {k: v}
+        return {k: {"$eq": v}}
+
+    if len(filters) == 1:
+        key, val = next(iter(filters.items()))
+        return format_condition(key, val)
+
+    # Multiple conditions: wrap each in its own dict and use $and
+    return {"$and": [format_condition(k, v) for k, v in filters.items()]}
+
+
+# ── OFF-TOPIC DETECTION ──────────────────────────────────────────────────────
+_MEDICAL_KEYWORDS = {
+    "anatomy", "physiology", "muscle", "bone", "organ", "blood", "nerve",
+    "cell", "tissue", "artery", "vein", "heart", "lung", "kidney", "liver",
+    "brain", "spinal", "endocrine", "hormone", "immune", "lymph", "digestive",
+    "respiratory", "skeletal", "muscular", "nervous", "chapter", "hoofdstuk",
+    "textbook", "boek", "exam", "quiz", "test", "study", "explain", "what is",
+    "describe", "function", "structure", "disease", "syndrome", "patient",
+    "medical", "clinical", "diagnosis", "treatment", "body", "human",
+    "skin", "joint", "tendon", "ligament", "cartilage", "neuron", "synapse",
+    "metabolism", "digestion", "absorption", "excretion", "homeostasis",
+    "reflex", "receptor", "gland", "enzyme", "protein", "dna", "rna",
+    "chromosom", "mitosis", "meiosis", "embryo", "placenta", "anatomy",
+    "pathology", "histology", "cytology", "biochemistry", "pharmacology",
+}
+
+_OFF_TOPIC_PATTERNS = [
+    r'\b(recipe|cook(?:ing)?|bak(?:ing|e)|restaurant|food(?! intake)|diet plan)\b',
+    r'\b(weather|forecast|climate change(?! physiology))\b',
+    r'\b(sport(?!s medicine)|football|soccer|basketball|tennis|cricket|baseball|hockey)\b',
+    r'\b(movie|film|tv show|series|netflix|disney|youtube|tiktok|instagram|twitter|facebook)\b',
+    r'\b(music|song|album|artist|concert|spotify|playlist)\b',
+    r'\b(celebrity|actor|actress|singer|politician|president|election)\b',
+    r'\b(stock market|crypto|bitcoin|ethereum|nft|investment|trading)\b',
+    r'\b(javascript|html|css|sql|programming|software|debug|code|app(?! development))\b',
+    r'\b(minecraft|fortnite|gta|valorant|gaming|video game)\b',
+    r'\b(travel|hotel|flight|vacation|tourism|passport|visa)\b',
+    r'\b(joke|meme|funny|humor|prank|riddle)\b',
+]
+
+def is_off_topic(prompt: str) -> bool:
+    """Returns True if the prompt is clearly unrelated to the book / medical domain."""
+    lower = prompt.lower()
+    # If any medical keyword is present, keep it in scope
+    if any(kw in lower for kw in _MEDICAL_KEYWORDS):
+        return False
+    # Very short messages (<= 3 words) are ambiguous — let the pipeline handle
+    if len(lower.split()) <= 3:
+        return False
+    for pat in _OFF_TOPIC_PATTERNS:
+        if re.search(pat, lower):
+            return True
+    return False
+
 def retrieve_documents(prompt, selected_chapter, chapters, db):
     """Retrieves relevant document chunks from ChromaDB using chapter filtering or semantic search."""
     import chromadb.errors
+    if db is None:
+        return [], []
     try:
-        where_filter = {}
+        raw_filter = {}
         if "selected_book" in st.session_state and st.session_state.selected_book:
-            where_filter["source"] = st.session_state.selected_book
+            raw_filter["source"] = st.session_state.selected_book
 
-        target_chapter = None
-        if selected_chapter != "All Chapters":
-            target_chapter = selected_chapter
+        target_chapters = []
+        if selected_chapter and selected_chapter != "All Chapters":
+            target_chapters = [selected_chapter]
         else:
             # Auto-detect chapter from prompt string
-            match = re.search(r'(?i)(chapter|hoofdstuk)\s*(\d+)', prompt)
+            targets = []
+            match = re.search(r'(?i)(?:chapter|hoofdstuk)(?:s|ken)?\s+((?:\d+(?:\s*(?:,|and|en|&|-|t/m|to|tot)\s*\d+)*))', prompt)
             if match:
-                inferred = f"Hoofdstuk {match.group(2)}"
-                if inferred in chapters:
-                    target_chapter = inferred
+                num_str = match.group(1)
+                range_match = re.search(r'(\d+)\s*(?:-|t/m|to|tot)\s*(\d+)', num_str)
+                if range_match:
+                    start_num = int(range_match.group(1))
+                    end_num = int(range_match.group(2))
+                    if start_num < end_num and end_num - start_num < 50:
+                        for i in range(start_num, end_num + 1):
+                            targets.append(str(i))
+                else:
+                    targets = re.findall(r'\d+', num_str)
 
-        if target_chapter:
-            # Fetch entire chapter
-            where_filter["chapter"] = target_chapter
-            chapter_data = db.get(where=where_filter)
-            docs = [Document(page_content=d, metadata=m) for d, m in zip(chapter_data["documents"], chapter_data["metadatas"])] if chapter_data and chapter_data["documents"] else []
+            for t in targets:
+                inferred = f"Hoofdstuk {t}"
+                if inferred in chapters and inferred not in target_chapters:
+                    target_chapters.append(inferred)
+
+        if target_chapters:
+            # Fetch entire chapter using the ChromaDB client directly for reliability
+            if len(target_chapters) == 1:
+                raw_filter["chapter"] = target_chapters[0]
+            else:
+                raw_filter["chapter"] = {"$in": target_chapters}
+            where_clause = _build_chroma_where(raw_filter)
+            try:
+                # Access underlying ChromaDB collection for precise filtered fetch
+                coll = db._collection
+                chapter_data = coll.get(
+                    where=where_clause if where_clause else None,
+                    include=["documents", "metadatas"]
+                )
+                documents = chapter_data.get("documents") or []
+                metadatas = chapter_data.get("metadatas") or []
+                docs = [
+                    Document(page_content=d, metadata=m)
+                    for d, m in zip(documents, metadatas)
+                    if d
+                ]
+            except Exception:
+                # Fallback: try LangChain wrapper get()
+                lc_where = where_clause if where_clause else None
+                chapter_data = db.get(where=lc_where, include=["documents", "metadatas"])
+                documents = chapter_data.get("documents") or []
+                metadatas = chapter_data.get("metadatas") or []
+                docs = [
+                    Document(page_content=d, metadata=m)
+                    for d, m in zip(documents, metadatas)
+                    if d
+                ]
             docs.sort(key=lambda x: x.metadata.get("page", 0))
-            return docs
+            return docs, target_chapters
         else:
             # Focused semantic search
             search_kwargs = {"k": 5}
-            if where_filter:
-                search_kwargs["filter"] = where_filter
+            if raw_filter:
+                search_kwargs["filter"] = _build_chroma_where(raw_filter)
             retriever = db.as_retriever(search_type="similarity", search_kwargs=search_kwargs)
-            return retriever.invoke(prompt)
+            return retriever.invoke(prompt), []
     except chromadb.errors.NotFoundError:
-        return []
+        return [], []
     except Exception as e:
         print(f"Error retrieving documents: {e}")
-        return []
+        import traceback
+        traceback.print_exc()
+        return [], []
 
-def build_prompt(prompt, docs, summary_level, response_style):
+def build_prompt(prompt, docs, summary_level, response_style, selected_chapter=None, inferred_chapters=None):
     """Builds the final prompt string from retrieved document chunks and user settings."""
     context_text = "\n\n".join([f"--- Chapter: {doc.metadata.get('chapter', 'Unknown')} | Page: {doc.metadata.get('page', 'Unknown')} ---\n{doc.page_content}" for doc in docs])
     
-    detail_instruction = "Provide a comprehensive, detailed breakdown covering all aspects of the answer."
     if summary_level == "Low":
-        detail_instruction = "Provide a concise, high-level summary of the most important points for the overall answer. Keep it brief."
-    detail_instruction += " This level of detail applies to BOTH the textbook summary AND the General Medical Knowledge section."
+        detail_instruction = (
+            "Provide a **highly concise**, high-level summary. "
+            "Limit your response to **exactly 3-5 bullet points** focusing only on the most critical information. "
+            "Be extremely brief and avoid any unnecessary elaboration."
+        )
+    else:
+        detail_instruction = (
+            "Provide a **comprehensive, multi-sectioned mastery breakdown**. "
+            "Structure your response with clear headings (e.g., 'Core Concepts', 'Detailed Mechanism', 'Clinical Relevance'). "
+            "For every concept, explain the 'How' and 'Why' in great detail. "
+            "Include practical examples or clinical significance where relevant to deepen understanding. "
+            "Aim for a deep, academic exploration of the topic."
+        )
+    detail_instruction += " This level of detail applies to BOTH the textbook summary and the General Knowledge section."
 
-    tone_instruction = "Ensure the tone and language complexity is academic, professional, and highly detailed."
+    tone_instruction = "Ensure the tone and language complexity is academic, professional, and sophisticated."
     if response_style == "Simple":
-        tone_instruction = "Rewrite all information using simple, everyday, colloquial language. Avoid dense medical jargon where possible, use analogies if helpful, and make it very easy to understand for a layperson. Do not lose factual accuracy."
-    tone_instruction += " This complexity of language applies to BOTH the textbook summary AND the General Medical Knowledge section."
+        tone_instruction = (
+            "Rewrite all information using simple, everyday language as if explaining to a 10-year-old. "
+            "Avoid medical jargon—replace it with common terms or clear analogies. "
+            "Keep it friendly and very easy to digest without losing factual core."
+        )
+    tone_instruction += " This complexity of language applies to BOTH the textbook summary and the General Knowledge section."
+
+    scope_instruction = ""
+    target_chapters_str = None
+    if selected_chapter and selected_chapter != "All Chapters":
+        target_chapters_str = selected_chapter
+    elif inferred_chapters:
+        target_chapters_str = " and ".join(inferred_chapters) if len(inferred_chapters) > 1 else inferred_chapters[0]
+        
+    if target_chapters_str:
+        scope_instruction = f"\nCRITICAL SCOPE: You are currently focused strictly on **{target_chapters_str}**. Your textbook summary MUST NOT include information from other chapters, even if you suspect what they contain from your internal knowledge. Stay confined to the provided {target_chapters_str} excerpt for the first part of your response."
 
     system_template = """
     You are an expert Anatomy and Physiology professor and a highly skilled editor.
     Your task is to answer the user's question based on the Dutch textbook excerpt provided.
+    {scope_instruction}
     
     CRITICAL INSTRUCTION:
     First, you MUST always summarize whatever information IS present in the provided text excerpt that relates to the user's query, even if it does not fully answer their question. 
-    Write this section clearly based strictly on the excerpt.
+    Write this section clearly based strictly on the excerpt. DO NOT hallucinate or "complete" the textbook's info using your own knowledge in this part.
     
-    Then, if the excerpt did NOT fully answer the user's question or lacked the core information, you MUST create a new paragraph starting with "**General Medical Knowledge:**". In this section, provide the full correct answer to the user's query using your own broad medical knowledge.
+    Then, if the excerpt did NOT fully answer the user's question or lacked the core information, you MUST create a new paragraph starting with "**General Knowledge:**". In this section, provide the full correct answer to the user's query using your own broad medical knowledge.
     
     Please provide all answers in English.
     
@@ -424,6 +733,7 @@ def build_prompt(prompt, docs, summary_level, response_style):
     return PromptTemplate.from_template(system_template).format(
         detail_instruction=detail_instruction,
         tone_instruction=tone_instruction,
+        scope_instruction=scope_instruction,
         context=context_text, 
         question=prompt
     )
@@ -530,44 +840,8 @@ def render_sidebar_library():
         st.markdown(
             """
             <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-            /* Force the gradient on every Streamlit container */
-            html, body, .stApp,
-            [data-testid="stAppViewContainer"],
-            [data-testid="stMain"],
-            [data-testid="stMainBlockContainer"],
-            .main .block-container { background: transparent !important; }
-
-            html {
-                background: linear-gradient(135deg,
-                    #c9b8f0 0%,
-                    #f7c5b0 45%,
-                    #aee4c8 100%
-                ) fixed !important;
-                min-height: 100%;
-            }
-
-            /* Sidebar: frosted glass over the gradient */
-            /* Sidebar: frosted glass */
-            /* Top-level container gets the frosted background */
-            section[data-testid="stSidebar"] {
-                background: rgba(255,255,255,0.30) !important;
-                backdrop-filter: blur(28px) saturate(2.0) !important;
-                -webkit-backdrop-filter: blur(28px) saturate(2.0) !important;
-                border-right: 1px solid rgba(255,255,255,0.5) !important;
-            }
-            /* All inner wrapper divs must be transparent so gradient shows through */
-            section[data-testid="stSidebar"] > div,
-            section[data-testid="stSidebar"] > div > div,
-            section[data-testid="stSidebar"] > div > div > div,
-            section[data-testid="stSidebar"] > div > div > div > div,
-            [data-testid="stSidebarContent"],
-            [data-testid="stSidebarUserContent"],
-            [data-testid="stSidebar"] .stVerticalBlock,
-            [data-testid="stSidebar"] .element-container {
-                background: transparent !important;
-            }
+            /* ── SIDEBAR-SPECIFIC COMPONENT STYLES ── */
+            /* (Background, blur, and transparency are handled by apply_global_styles) */
 
             .sidebar-title {
                 font-family: 'Inter', sans-serif;
@@ -581,7 +855,7 @@ def render_sidebar_library():
                 font-family: 'Inter', sans-serif;
                 font-size: 0.72rem; font-weight: 700;
                 letter-spacing: 0.1em; text-transform: uppercase;
-                color: #64748b; margin-bottom: 0.8rem;
+                color: #64748b !important; margin-bottom: 0.8rem;
                 display: flex; align-items: center;
             }
             .lib-label span {
@@ -592,12 +866,6 @@ def render_sidebar_library():
                 margin-left: 5px;
                 opacity: 0.8;
             }
-            .sidebar-caption {
-                font-family: 'Inter', sans-serif;
-                font-size: 0.85rem;
-                color: #64748b;
-                margin-bottom: 1rem;
-            }
             .lib-label::before {
                 content: '📚';
                 margin-right: 6px;
@@ -606,20 +874,9 @@ def render_sidebar_library():
             .book-item {
                 font-family: 'Inter', sans-serif;
                 font-size: 0.85rem; font-weight: 600;
-                color: #64748b; margin-bottom: 4px;
+                color: #64748b !important; margin-bottom: 4px;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                 display: flex; align-items: center;
-            }
-            .dot-a {
-                display:inline-block; width:7px; height:7px;
-                border-radius:50%; background:#22c55e;
-                margin-right:7px; vertical-align:middle;
-                box-shadow:0 0 5px #22c55e80;
-            }
-            .dot-i {
-                display:inline-block; width:7px; height:7px;
-                border-radius:50%; background:#cbd5e1;
-                margin-right:7px; vertical-align:middle;
             }
             section[data-testid="stSidebar"] .stButton > button {
                 font-family: 'Inter', sans-serif !important;
@@ -649,7 +906,6 @@ def render_sidebar_library():
                 color: #64748b;
                 font-weight: 500;
             }
-
             /* ── Transparent drag-and-drop uploader ── */
             section[data-testid="stSidebar"] [data-testid="stFileUploader"] {
                 background: transparent !important;
@@ -1021,7 +1277,7 @@ def render_landing_page():
             font-family: 'Inter', sans-serif;
             text-align: center;
             font-size: 1.25rem;
-            color: #64748b;
+            color: #64748b !important;
             font-weight: 500;
             margin-top: 12px;
             margin-bottom: 2.5rem;
@@ -1097,7 +1353,7 @@ def render_landing_page():
         }
         .card-desc {
             font-family: 'Inter', sans-serif;
-            font-size: 1rem; color: #64748b;
+            font-size: 1rem; color: #64748b !important;
             line-height: 1.6; margin-bottom: 32px;
         }
         </style>
@@ -1169,17 +1425,51 @@ def run_test_mode():
         st.session_state.test_phase = "config"
         
     with st.sidebar:
-        # We handle Main Menu button globally in main() sidebar
-        pass
+        if st.button("🏠 Main Menu", use_container_width=True):
+            if "test_phase" in st.session_state:
+                del st.session_state.test_phase
+            st.session_state.app_mode = None
+            st.rerun()
+        st.markdown("---")
 
-    # Book Reminder Badge (Top Right)
     sel_book = st.session_state.get("selected_book", "No Book Selected")
-    st.markdown(f'<div class="mode-badge">📖 {sel_book}</div>', unsafe_allow_html=True)
-
-    st.title("📝 Test Mode")
+    st.markdown(
+        f"""
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h1 style='margin: 0 !important; font-size: 3rem !important;'>📝 Test Mode</h1>
+            <div class="mode-badge">📖 {sel_book}</div>
+            <div class="help-wrap">
+                <span class="help-btn">?</span>
+                <div class="help-popover">
+                    <b>📝 Test Mode — Quick Guide</b>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">bookmarks</span>
+                        <div class="guide-text"><b>Chapter Focus</b>: Select one or more chapters or leave empty for the full book.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">settings</span>
+                        <div class="guide-text"><b>Config</b>: Set question count (5–50), options, and timer.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">auto_awesome</span>
+                        <div class="guide-text"><b>Generate</b>: Click <em>Generate My Quiz →</em> to start your personalized test.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">quiz</span>
+                        <div class="guide-text"><b>Submit</b>: Select answers and submit. Wrong answers show detailed explanations.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">home</span>
+                        <div class="guide-text"><b>Switch</b>: Return to Home to toggle between <em>Study</em> and <em>Test</em> modes.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     
     if st.session_state.test_phase == "config":
-        st.markdown('<div class="glass-card" style="padding: 40px; margin: 2rem auto; max-width: 600px;">', unsafe_allow_html=True)
         st.markdown("<h2 style='text-align: center; margin-bottom: 30px;'>🎯 Test Configuration</h2>", unsafe_allow_html=True)
         
         db = load_db()
@@ -1187,6 +1477,14 @@ def run_test_mode():
         chapter_opts = [ch for ch in all_chapters if ch != "All Chapters"]
         
         selected_chapters = st.multiselect("Select Focus Chapters (Optional):", chapter_opts)
+        
+        def chapter_sort_key(ch):
+            if not ch: return 999
+            if ch.lower() in ("preface / intro", "inleiding"): return -1
+            match = re.search(r'\d+', ch)
+            return int(match.group()) if match else 999
+            
+        selected_chapters = sorted(selected_chapters, key=chapter_sort_key)
         
         st.markdown("<br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
@@ -1207,7 +1505,6 @@ def run_test_mode():
             }
             st.session_state.test_phase = "loading"
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
     elif st.session_state.test_phase == "loading":
         st.info("🩺 Preparing your test...")
@@ -1232,10 +1529,11 @@ def run_test_mode():
         try:
             if st.session_state.test_config["chapters"]:
                 for ch in st.session_state.test_config["chapters"]:
-                    where_filter = {"chapter": ch}
+                    raw_filter = {"chapter": ch}
                     if st.session_state.get("selected_book"):
-                        where_filter["source"] = st.session_state.selected_book
-                    chapter_data = db.get(where=where_filter, include=["metadatas", "documents"])
+                        raw_filter["source"] = st.session_state.selected_book
+                    where_clause = _build_chroma_where(raw_filter)
+                    chapter_data = db.get(where=where_clause if where_clause else None, include=["metadatas", "documents"])
                     if chapter_data and chapter_data["documents"]:
                         docs = [Document(page_content=doc_text, metadata=chapter_data["metadatas"][i]) for i, doc_text in enumerate(chapter_data["documents"])]
                         chapter_docs[ch] = docs
@@ -1456,11 +1754,21 @@ def run_test_mode():
 def run_study_mode():
     if "current_session_id" not in st.session_state:
         st.session_state.current_session_id = str(uuid.uuid4())
-        
+
     with st.sidebar:
-        # Chat History header and New Chat handle in global menu?
-        # No, keep it in sidebar but tidy it up.
-        st.markdown('<p class="lib-label">🕒 History</p>', unsafe_allow_html=True)
+        if st.button("🏠 Main Menu", use_container_width=True):
+            st.session_state.app_mode = None
+            st.rerun()
+        st.markdown("---")
+        # Active book indicator
+        sel_book = st.session_state.get("selected_book", "No book selected")
+        st.markdown(
+            f'<p style="font-size:0.75rem; font-weight:600; color:#64748b; '
+            f'text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem;">'
+            f'📖 {sel_book}</p>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<p class="lib-label" style="margin-top:1rem;">🕒 History</p>', unsafe_allow_html=True)
         if st.button("＋ New Chat", use_container_width=True, type="secondary"):
             st.session_state.current_session_id = str(uuid.uuid4())
             st.session_state.messages = []
@@ -1478,15 +1786,54 @@ def run_study_mode():
         st.error("Vector Database not found! Please run `python scripts/build_vector_db.py` first.")
         st.stop()
         
-    # Book Reminder Badge (Top Right)
+    # Consolidated Header Row
     sel_book = st.session_state.get("selected_book", "No Book Selected")
-    st.markdown(f'<div class="mode-badge">📖 {sel_book}</div>', unsafe_allow_html=True)
-
-    st.markdown("<h1 style='font-size: 3rem !important; margin-bottom: 0.5rem !important;'>🧠 Study Mode</h1>", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h1 style='margin: 0 !important; font-size: 3rem !important;'>🧠 Study Mode</h1>
+            <div class="mode-badge">📖 {sel_book}</div>
+            <div class="help-wrap">
+                <span class="help-btn">?</span>
+                <div class="help-popover">
+                    <b>📖 Study Mode — Quick Guide</b>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">chat</span>
+                        <div class="guide-text"><b>Ask</b>: Type any question about your textbook in the chat box below.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">filter_list</span>
+                        <div class="guide-text"><b>Chapters</b>: Narrow the search using the <b>Focus Chapter</b> selector.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">plumbing</span>
+                        <div class="guide-text"><b>Depth</b>: Use <b>Low</b> for concise summaries and <b>High</b> for deep breakdowns.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">translate</span>
+                        <div class="guide-text"><b>Style</b>: Select <b>Simple</b> for plain language or <b>Standard</b> for academic tone.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">add_comment</span>
+                        <div class="guide-text"><b>New Chat</b>: Use <em>+ New Chat</em> to clear the history and start fresh.</div>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon material-icons">info</span>
+                        <div class="guide-text"><b>Scope</b>: I'll let you know if a question is off-topic! 😊</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.markdown("<p style='color: #64748b; font-size: 1.1rem; margin-bottom: 2rem;'>Master your material with Ai-driven insights.</p>", unsafe_allow_html=True)
 
     # Initialize environment
     db = load_db()
+    if db is None:
+        st.error("⚠️ **Failed to load the Vector Database.** Please restart the app or run `python scripts/build_vector_db.py` first.")
+        st.stop()
     llm_chain = load_llms()
     chapters = get_chapters(db)
 
@@ -1498,7 +1845,7 @@ def run_study_mode():
     with c2:
         summary_level = st.radio("📊 Depth:", options=["Low", "High"], horizontal=True, index=0)
     with c3:
-        response_style = st.radio("🎨 Style:", options=["Standard", "Simple"], horizontal=True, index=0)
+        response_style = st.radio("🎨 Style:", options=["Standard", "Simple"], horizontal=True, index=1)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Render existing chat
@@ -1524,18 +1871,37 @@ def run_study_mode():
 
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
-            message_placeholder.markdown("⏳ **Searching textbook for knowledge...**")
             auto_scroll()
+
+            # ── Off-topic guard ──────────────────────────────────────────────
+            if is_off_topic(prompt):
+                response = (
+                    "🤖 **I'm specialised in Anatomy & Physiology** — your question "
+                    "seems to be outside my area of expertise.\n\n"
+                    "Here's what I **can** help you with:\n"
+                    "- 🧬 Ask anything about your textbook's chapters\n"
+                    "- 🔬 Get breakdowns of anatomical structures and physiological processes\n"
+                    "- 💡 Switch between *Simple* and *Standard* language styles\n"
+                    "- 📊 Choose *Low* or *High* depth for your answers\n"
+                    "- 📝 Go back to the **Home** screen and try **Test Mode** to quiz yourself\n\n"
+                    "*Tip: hover the **?** in the sidebar for a full guide!*"
+                )
+                message_placeholder.markdown(response)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                db_utils.save_message(st.session_state.current_session_id, "assistant", response)
+                st.stop()
+
+            message_placeholder.markdown("⏳ **Searching textbook for knowledge...**")
             
             # Execute Pipeline
-            docs = retrieve_documents(prompt, selected_chapter, chapters, db)
+            docs, inferred_chapters = retrieve_documents(prompt, selected_chapter, chapters, db)
             
             if not docs:
                 response = "I couldn't find any relevant information in the book for that question."
                 message_placeholder.markdown(response)
             else:
                 message_placeholder.markdown("🧠 **Reading contexts & thinking...**")
-                final_prompt = build_prompt(prompt, docs, summary_level, response_style)
+                final_prompt = build_prompt(prompt, docs, summary_level, response_style, selected_chapter=selected_chapter, inferred_chapters=inferred_chapters)
                 response = execute_llm_stream(llm_chain, final_prompt, message_placeholder, docs)
             
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -1575,18 +1941,11 @@ def main():
         
     apply_global_styles()
 
-    # Global Sidebar
-    with st.sidebar:
-        if st.session_state.app_mode:
-            if st.button("🏠 Main Menu", use_container_width=True):
-                # Cleanup specific mode states
-                if "test_phase" in st.session_state: del st.session_state.test_phase
-                st.session_state.app_mode = None
-                st.rerun()
-            st.markdown("---")
-        else:
-            render_sidebar_library()
-        
+    # Sidebar: only render the library in landing mode.
+    # Study and Test modes manage their own sidebar contents.
+    if not st.session_state.app_mode:
+        render_sidebar_library()
+
     if st.session_state.app_mode == "study":
         run_study_mode()
     elif st.session_state.app_mode == "test":

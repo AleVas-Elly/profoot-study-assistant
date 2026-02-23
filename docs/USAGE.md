@@ -27,7 +27,7 @@ Evaluate your knowledge with auto-generated quizzes:
 
 1. Select which chapters you want to be tested on.
 2. Choose the number of questions and the time limit.
-3. **Taking the Quiz:** Questions are generated proportionally based on the length of the selected chapters.
+3. **Taking the Quiz:** Questions are generated proportionally based on the length of the selected chapters, with a live progress bar tracking generation.
 4. **Results:** After submitting, you get a full review. Profoot provides color-coded feedback and detailed explanations for **every** option (why the right one is right, and why the wrong ones are wrong).
 
 ## 📚 Managing your Library

@@ -86,7 +86,15 @@ def generate_mock_test(api_keys, book_source, chapter_docs, quotas, num_options,
     {context}
     """
 
-    for chapter, num_questions in quotas.items():
+    def chapter_sort_key(ch):
+        if not ch: return 999
+        if ch.lower() in ("preface / intro", "inleiding"): return -1
+        match = re.search(r'\d+', ch)
+        return int(match.group()) if match else 999
+        
+    sorted_chapter_items = sorted(quotas.items(), key=lambda x: chapter_sort_key(x[0]))
+
+    for chapter, num_questions in sorted_chapter_items:
         if num_questions <= 0:
             continue
             
