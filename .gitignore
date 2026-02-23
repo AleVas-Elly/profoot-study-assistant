@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+.venv_win/
+venv/
+env/
+
+# Environment variables
+.env
+.env.*
+
+# Runtime / generated data
+chroma_db/
+chat_history.db
+books/*.pdf
+books/selection.txt
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Exports / archives
+*.zip

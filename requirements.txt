@@ -1,0 +1,12 @@
+streamlit
+pymupdf
+pytesseract
+Pillow
+langchain
+langchain-text-splitters
+fastembed
+langchain-community
+chromadb
+langchain-chroma
+python-dotenv
+langchain-google-genai
